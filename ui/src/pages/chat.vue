@@ -1,7 +1,12 @@
 <template>
   <h2>hi</h2>
   <input type="text" v-model="userInput" />
-  <MainButton @click="test">Test</MainButton>
+  <MainButton @click="test">Send Message</MainButton>
+  <div>
+    <ul>
+      <li v-for="msg in chatMessages">{{ msg }}</li>
+    </ul>
+  </div>
 </template>
 <script lang="ts" setup>
 import MainButton from "../components/Buttons/MainButton.vue";
@@ -10,16 +15,25 @@ import { onMounted, ref } from "vue";
 // import axios from "axios";
 import { io, Socket } from "socket.io-client";
 
+type ChatMessage = {
+  message: string;
+  userId: string;
+};
 const route = useRoute();
 const router = useRouter();
 let socket: Socket;
 let userInput = ref<string>("hola hola");
 let userId = "test";
+let chatMessages = ref<[]>([]);
 function test() {
+  let message: ChatMessage = {
+    message: userInput.value,
+    userId,
+  };
+
   socket.emit(`sendMessage`, {
     roomId: route.params.id,
-    userId,
-    message: userInput.value,
+    message,
   });
 }
 
@@ -30,12 +44,18 @@ function initializeSocketConnection(roomId: string) {
     userId,
   });
 
-  socket.on("confirmation", (data) => {
-    console.log("ROOM JOINED", data);
+  socket.on("roomJoined", (data) => {
+    chatMessages.value = data;
   });
 
-  socket.on("receiveMessage", (message) => {
+  socket.on("userThresholdBreached", () => {
+    alert("Room threshold has been reached");
+    router.push("/");
+  });
+
+  socket.on("newMessage", (message) => {
     console.log("Message received", message);
+    chatMessages.value = message;
   });
 }
 

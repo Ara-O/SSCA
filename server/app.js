@@ -11,19 +11,65 @@ const io = new Server(server, {
   },
 });
 
+class Room {
+  static #allRooms = [];
+  static ROOM_LIMIT = 2;
+
+  constructor(roomId) {
+    this.roomId = roomId;
+    this.messageHistory = [];
+    this.connectedClients = 1;
+    Room.#allRooms.push(roomId);
+  }
+
+  addClient() {
+    this.connectedClients++;
+  }
+
+  addMessage(message) {
+    this.messageHistory.push(message);
+  }
+
+  getMessageHistory() {
+    return this.messageHistory;
+  }
+
+  hasReachedRoomThreshold() {
+    if (this.connectedClients == Room.ROOM_LIMIT) {
+      return true;
+    }
+    return false;
+  }
+
+  static hasRoom(roomId) {
+    return Room.#allRooms.includes(roomId);
+  }
+}
+
+const roomInfo = {};
 io.on("connection", (socket) => {
-  console.log("connected");
+  console.log("a user connected");
 
   socket.on("joinRoom", (data) => {
     let roomId = `room-${data.roomId}`;
+
+    if (Room.hasRoom(roomId)) {
+      if (roomInfo[roomId].hasReachedRoomThreshold()) {
+        socket.emit("userThresholdBreached");
+        return;
+      }
+      roomInfo[roomId].addClient();
+    } else {
+      roomInfo[roomId] = new Room(roomId);
+    }
     socket.join(roomId);
-    io.to(roomId).emit("confirmation", `User-test has joined this room`);
+    io.to(roomId).emit("roomJoined", roomInfo[roomId].getMessageHistory());
   });
 
   socket.on("sendMessage", (data) => {
     let roomId = `room-${data.roomId}`;
-    console.log(data);
-    io.to(roomId).emit("receiveMessage", data.message);
+    roomInfo[roomId].addMessage(data.message);
+    io.to(roomId).emit("newMessage", roomInfo[roomId].getMessageHistory());
   });
 
   socket.on("disconnect", () => {
