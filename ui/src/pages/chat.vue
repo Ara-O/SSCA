@@ -54,7 +54,7 @@ function sendMessage() {
 }
 
 function initializeSocketConnection(roomId: string) {
-  socket = io("http://localhost:8080");
+  socket = io("https://ssca.onrender.com");
   socket.emit("joinRoom", {
     roomId,
     userId: userId.value,
