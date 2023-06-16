@@ -2,7 +2,7 @@
   <main>
     <h3 class="text-2xl font-semibold">Welcome</h3>
     <h4 class="mt-3 text-md">Start a secure chat now</h4>
-    <MainButton @click="startSecureChat">Start</MainButton>
+    <MainButton @click="startSecureChat" class="mt-4">Start</MainButton>
   </main>
 </template>
 <script setup lang="ts">
@@ -19,6 +19,7 @@ function startSecureChat() {
   if (isSupported) {
     copy(`http://localhost:5173/chat/${randomString}`);
     router.push(`/chat/${randomString}`);
+    alert("The room link has been copied to your clipboard");
   }
   console.log(randomString);
 }
